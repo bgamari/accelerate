@@ -5,6 +5,7 @@
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE InstanceSigs       #-}
 {-# OPTIONS_HADDOCK hide #-}
 -- |
 -- Module      : Data.Array.Accelerate.Array.Representation
@@ -107,19 +108,23 @@ instance Shape sh => Shape (sh, Int) where
       r | dim sh == 0   = $indexCheck "fromIndex" i sz i
         | otherwise     = i `remInt` sz
 
+  bound :: (sh, Int) -> (sh, Int) -> Boundary a -> Either a (sh, Int)
   bound (sh, sz) (ix, i) bndy
     | i < 0                         = case bndy of
-                                        Clamp      -> bound sh ix bndy `addDim` 0
-                                        Mirror     -> bound sh ix bndy `addDim` (-i)
-                                        Wrap       -> bound sh ix bndy `addDim` (sz+i)
+                                        Clamp      -> next `addDim` 0
+                                        Mirror     -> next `addDim` (-i)
+                                        Wrap       -> next `addDim` (sz+i)
                                         Constant e -> Left e
     | i >= sz                       = case bndy of
-                                        Clamp      -> bound sh ix bndy `addDim` (sz-1)
-                                        Mirror     -> bound sh ix bndy `addDim` (sz-(i-sz+2))
-                                        Wrap       -> bound sh ix bndy `addDim` (i-sz)
+                                        Clamp      -> next `addDim` (sz-1)
+                                        Mirror     -> next `addDim` (sz-(i-sz+2))
+                                        Wrap       -> next `addDim` (i-sz)
                                         Constant e -> Left e
-    | otherwise                     = bound sh ix bndy `addDim` i
+    | otherwise                     = next `addDim` i
     where
+      next = bound sh ix bndy
+      {-# NOINLINE next #-}
+      addDim :: Either a t -> t1 -> Either a (t, t1)
       Right ds `addDim` d = Right (ds, d)
       Left e   `addDim` _ = Left e
 

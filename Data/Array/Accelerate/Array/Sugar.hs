@@ -947,6 +947,7 @@ class (Elt sh, Elt (Any sh), Repr.Shape (EltRepr sh)) => Shape sh where
   bound sh ix bndy      = case Repr.bound (fromElt sh) (fromElt ix) bndy of
                             Left v    -> Left v
                             Right ix' -> Right $ toElt ix'
+  {-# INLINE bound #-}
 
   iter sh f c r         = Repr.iter  (fromElt sh) (f . toElt) c r
   iter1 sh f r          = Repr.iter1 (fromElt sh) (f . toElt) r
